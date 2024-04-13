@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/new/resources">
+        <file>Assets/power.png</file>
+        <file>Assets/menu.png</file>
+    </qresource>
+</RCC>
