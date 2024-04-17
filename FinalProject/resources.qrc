@@ -7,5 +7,6 @@
         <file>Assets/pause.png</file>
         <file>Assets/play.png</file>
         <file>Assets/stop.png</file>
+        <file>Assets/battery.png</file>
     </qresource>
 </RCC>
