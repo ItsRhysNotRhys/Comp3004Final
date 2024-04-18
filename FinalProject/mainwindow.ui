@@ -399,9 +399,9 @@
     <widget class="QPushButton" name="electrodes_button">
      <property name="geometry">
       <rect>
-       <x>240</x>
+       <x>230</x>
        <y>10</y>
-       <width>131</width>
+       <width>151</width>
        <height>25</height>
       </rect>
      </property>

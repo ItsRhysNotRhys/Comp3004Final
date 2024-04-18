@@ -22,6 +22,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void session_update();
+
 private slots:
     void on_menu_button_up_pressed();
 
@@ -44,11 +46,17 @@ private:
 
     void setup();
     void update_ui();
+    void analysis();
+    void feedback();
+    void start_session();
 
     int current_selection = 0;
 
     State state = State::MENU;
 
+    QTimer* analysis_timer;
+    QTimer* feedback_timer;
+    QTimer* session_updater;
     Neureset EEG;
 };
 #endif // MAINWINDOW_H

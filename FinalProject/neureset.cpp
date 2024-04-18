@@ -7,7 +7,8 @@ Neureset::Neureset()
 
 Neureset::~Neureset()
 {
-
+    delete analysis_timer;
+    delete feedback_timer;
 }
 
 void Neureset::setup(){
@@ -22,4 +23,21 @@ void Neureset::setup(){
             logs[i][j] = 0.0;
         }
     }
+
+
+}
+
+void Neureset::session_start(){
+    current_round = 0;
+    analysis_timer->start(5000);
+    qInfo("Analysing... Please wait");
+}
+
+void Neureset::analysis(){
+    //Perform random frequency generation
+    //Save frequencies to the array
+}
+
+void Neureset::feedback(){
+    qInfo("Print frequency value impulsed");
 }
