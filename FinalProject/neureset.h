@@ -15,6 +15,7 @@ public:
     void session_start();
     void analysis();
     void feedback();
+    void save_session();
 
     bool electrodes_connected = false;
     bool session_complete = true;
@@ -23,6 +24,7 @@ public:
     int current_round = 0;
     int total_feedbacks = 16;
     int current_feedback = 0;
+
 
 private:
     void setup();

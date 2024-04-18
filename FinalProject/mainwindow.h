@@ -49,8 +49,11 @@ private:
     void analysis();
     void feedback();
     void start_session();
+    void clear_current_session();
+    void resume_round();
 
     int current_selection = 0;
+    int session_time_remaining = 0;
 
     State state = State::MENU;
 

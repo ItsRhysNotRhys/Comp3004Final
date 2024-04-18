@@ -145,8 +145,16 @@
         <height>101</height>
        </rect>
       </property>
+      <property name="font">
+       <font>
+        <pointsize>48</pointsize>
+       </font>
+      </property>
       <property name="text">
        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:48pt;&quot;&gt;0:00&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
       </property>
      </widget>
      <widget class="QLabel" name="date_label">
@@ -197,6 +205,14 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
+     <zorder>screen_text</zorder>
+     <zorder>progressBar</zorder>
+     <zorder>selection_arrow1</zorder>
+     <zorder>selection_arrow2</zorder>
+     <zorder>selection_arrow3</zorder>
+     <zorder>date_label</zorder>
+     <zorder>time_label</zorder>
+     <zorder>timer_label</zorder>
     </widget>
     <widget class="QPushButton" name="menu_button">
      <property name="geometry">

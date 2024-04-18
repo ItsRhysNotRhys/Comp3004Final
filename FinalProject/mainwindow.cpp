@@ -16,6 +16,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::setup(){
     state = POWEREDOFF;
+    ui->progressBar->setRange(0, 100);
     ui->progressBar->setValue(0);
 
     session_updater = new QTimer(this);
@@ -79,7 +80,15 @@ void MainWindow::update_ui(){
             return;
         case SESSION:
             ui->progressBar->setVisible(true);
+            ui->progressBar->setValue(EEG.current_round * 100 / (EEG.total_analysis + 1));
             ui->timer_label->setVisible(true);
+            if(session_time_remaining < 10){
+                QString time_left = "0:0" + QString::number(session_time_remaining);
+                ui->timer_label->setText(time_left);
+            }else {
+                QString time_left = "0:" + QString::number(session_time_remaining);
+                ui->timer_label->setText(time_left);
+            }
             ui->electrodes_button->setVisible(true);
 
             if(EEG.electrodes_connected == false){
@@ -118,7 +127,17 @@ void MainWindow::update_ui(){
 }
 
 void MainWindow::start_session(){
+
     EEG.current_round = 0;
+    EEG.session_complete = false;
+    session_time_remaining = ((EEG.total_analysis - EEG.current_round) * (5 + 1) + 5);
+
+    if(EEG.electrodes_connected == false){
+        qInfo("electrodes are not connected... Waiting");
+        return;
+    }
+
+    session_updater->start(1000);
     analysis_timer->start(5000);
     qInfo("Analysing... Please wait");
 }
@@ -129,13 +148,16 @@ void MainWindow::session_update(){
         session_updater->stop();
         state = MENU;
     }else{
+        if(EEG.paused == false){
+            session_time_remaining--;
+        }
+
         update_ui();
     }
 }
 
 void MainWindow::analysis(){
     if(EEG.current_round < EEG.total_analysis){
-        EEG.current_round++;
         qInfo("Done Analysis, delivering feedback impulses");
         EEG.analysis();
         analysis_timer->stop();
@@ -145,6 +167,8 @@ void MainWindow::analysis(){
         qInfo("Session completed! Saving session log... DONE");
         analysis_timer->stop();
         EEG.session_complete = true;
+        state = MENU;
+        update_ui();
     }
 }
 
@@ -156,8 +180,27 @@ void MainWindow::feedback(){
     }else{
         feedback_timer->stop();
         analysis_timer->start(5000);
+        EEG.current_round++;
         qInfo("Analysing... Please wait");
     }
+}
+
+void MainWindow::clear_current_session(){
+    session_updater->stop();
+    analysis_timer->stop();
+    feedback_timer->stop();
+    EEG.current_round = 0;
+    EEG.current_feedback = 0;
+    EEG.session_complete = true;
+}
+
+void MainWindow::resume_round(){
+    analysis_timer->start(5000);
+    qInfo("Analysing... Please wait");
+
+    //Set time left to amount at the start of the round
+    session_time_remaining = ((EEG.total_analysis - EEG.current_round) * (5 + 1) + 5);
+    update_ui();
 }
 
 void MainWindow::on_menu_button_up_pressed()
@@ -188,6 +231,7 @@ void MainWindow::on_power_button_pressed()
         update_ui();
     }else{
         state = POWEREDOFF;
+        clear_current_session();
         update_ui();
     }
 }
@@ -209,6 +253,7 @@ void MainWindow::on_start_button_pressed()
         }
     }else if(state == SESSION && EEG.electrodes_connected){
         EEG.paused = false;
+        resume_round();
     }
 }
 
@@ -216,7 +261,10 @@ void MainWindow::on_start_button_pressed()
 void MainWindow::on_pause_button_pressed()
 {
     if(state == SESSION){
+        qInfo("Session Paused. Waiting...");
         EEG.paused = true;
+        analysis_timer->stop();
+        feedback_timer->stop();
     }
 }
 
@@ -224,8 +272,9 @@ void MainWindow::on_pause_button_pressed()
 void MainWindow::on_stop_button_pressed()
 {
     if(state == SESSION){
-        session_updater->stop();
+        clear_current_session();
         state = MENU;
+        update_ui();
         //Call function in EEG to clear session data
     }
 }
@@ -247,5 +296,18 @@ void MainWindow::on_electrodes_button_pressed()
 {
     EEG.electrodes_connected = (false == EEG.electrodes_connected); // proud of this haha
     update_ui();
+
+    if(state == SESSION && EEG.session_complete == false){
+        if(EEG.electrodes_connected){
+            EEG.paused = false;
+            resume_round();
+        }else{
+            EEG.paused = true;
+            analysis_timer->stop();
+            feedback_timer->stop();
+            qInfo("Electrodes disconnected... Waiting for connection...");
+        }
+
+        }
 }
 
