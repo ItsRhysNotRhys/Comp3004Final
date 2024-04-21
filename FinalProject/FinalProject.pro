@@ -2,7 +2,10 @@ QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+
 CONFIG += c++11
+
+QT += charts
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -11,11 +14,13 @@ CONFIG += c++11
 SOURCES += \
     main.cpp \
     mainwindow.cpp \
-    neureset.cpp
+    neureset.cpp \
+    waveform.cpp
 
 HEADERS += \
     mainwindow.h \
-    neureset.h
+    neureset.h \
+    waveform.h
 
 FORMS += \
     mainwindow.ui

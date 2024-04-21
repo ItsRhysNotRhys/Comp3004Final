@@ -12,6 +12,13 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
+
+    delete session_updater;
+    delete analysis_timer;
+    delete feedback_timer;
+    delete series;
+    delete chart;
+    delete chart_view;
 }
 
 void MainWindow::setup(){
@@ -31,6 +38,22 @@ void MainWindow::setup(){
     feedback_timer->setSingleShot(false);
     connect(feedback_timer, &QTimer::timeout, this, &MainWindow::feedback);
 
+    series = new QLineSeries();
+    series->clear();
+
+    chart = new QChart();
+    chart->legend()->hide();
+    chart->addSeries(series);
+    chart->createDefaultAxes();
+
+    chart->setTitle("Wave form");
+
+    chart_view = new QChartView(chart, ui->graphicsView);
+    chart_view->resize(500, 350);
+    chart_view->setRenderHint(QPainter::Antialiasing);
+
+
+
     update_ui();
 }
 
@@ -49,9 +72,14 @@ void MainWindow::update_ui(){
 
     ui->electrodes_button->setVisible(true);
     ui->battery_percentage_label->setVisible(true);
+    ui->battery_percentage_label->setText(QString::number(EEG.battery));
 
     ui->date_label->setVisible(false);
     ui->time_label->setVisible(false);
+
+    ui->graphicsView->setVisible(false);
+
+    ui->wave_debug->setVisible(false);
 
     switch (state){
         case POWEREDOFF:
@@ -79,6 +107,11 @@ void MainWindow::update_ui(){
 
             return;
         case SESSION:
+            ui->wave_debug->setVisible(true);
+            ui->round_number->setText(QString::number(round_selection + 1));
+            ui->electrode_number->setText(QString::number(electrode_selection + 1));
+            ui->graphicsView->setVisible(true);
+            load_graph();
             ui->progressBar->setVisible(true);
             ui->progressBar->setValue(EEG.current_round * 100 / (EEG.total_analysis + 1));
             ui->timer_label->setVisible(true);
@@ -130,11 +163,17 @@ void MainWindow::start_session(){
 
     EEG.current_round = 0;
     EEG.session_complete = false;
+    EEG.clear_session();
     session_time_remaining = ((EEG.total_analysis - EEG.current_round) * (5 + 1) + 5);
+
+    round_selection = 0;
+    electrode_selection = 0;
 
     if(EEG.electrodes_connected == false){
         qInfo("electrodes are not connected... Waiting");
         return;
+    }else{
+        EEG.paused = false;
     }
 
     session_updater->start(1000);
@@ -150,6 +189,11 @@ void MainWindow::session_update(){
     }else{
         if(EEG.paused == false){
             session_time_remaining--;
+            EEG.battery --;
+
+            if(EEG.battery % 4 == 0){
+                EEG.battery --;
+            }
         }
 
         update_ui();
@@ -165,6 +209,7 @@ void MainWindow::analysis(){
         EEG.current_feedback = 0;
     }else{
         qInfo("Session completed! Saving session log... DONE");
+        EEG.analysis();
         analysis_timer->stop();
         EEG.session_complete = true;
         state = MENU;
@@ -185,6 +230,33 @@ void MainWindow::feedback(){
     }
 }
 
+void MainWindow::load_graph(){
+    Waveform* wave = EEG.get_wave(round_selection, electrode_selection);
+
+    float a1 = wave->amplitude_1;
+    float a2 = wave->amplitude_2;
+    float a3 = wave->amplitude_3;
+    int f1 = wave->frequency_1;
+    int f2 = wave->frequency_2;
+    int f3 = wave->frequency_3;
+    //qInfo("Frequencies for electrode:  Freq1: %d, Freq2: %d, Freq3: %d, Amp1: %f, Amp1: %f, Amp1: %f", f1, f2, f3, a1, a2, a3);
+    chart->removeSeries(series);
+    series->clear();
+
+    for(float x = 0.0; x < 0.75; x += 0.001){
+
+        float y = a1 * sin(2 * 3.14 * f1 * x) + a2 * sin(2 * 3.14 * f2 * x) + a3 * sin(2 * 3.14 * f3 * x);
+        qInfo("%f", y);
+
+        series->append(x, y);
+    }
+
+    chart->addSeries(series);
+    chart->createDefaultAxes();
+    ui->graphicsView->repaint();
+
+}
+
 void MainWindow::clear_current_session(){
     session_updater->stop();
     analysis_timer->stop();
@@ -196,6 +268,7 @@ void MainWindow::clear_current_session(){
 
 void MainWindow::resume_round(){
     analysis_timer->start(5000);
+    session_updater->start(1000);
     qInfo("Analysing... Please wait");
 
     //Set time left to amount at the start of the round
@@ -309,5 +382,33 @@ void MainWindow::on_electrodes_button_pressed()
         }
 
         }
+}
+
+
+void MainWindow::on_wave_round_up_pressed()
+{
+    round_selection = std::min(EEG.total_analysis, round_selection + 1);
+    update_ui();
+}
+
+
+void MainWindow::on_wave_round_down_pressed()
+{
+    round_selection = std::max(0, round_selection - 1);
+    update_ui();
+}
+
+
+void MainWindow::on_electrode_up_pressed()
+{
+    electrode_selection = std::min(6, electrode_selection + 1);
+    update_ui();
+}
+
+
+void MainWindow::on_electrode_down_pressed()
+{
+    electrode_selection = std::max(0, electrode_selection - 1);
+    update_ui();
 }
 
