@@ -170,7 +170,7 @@ void MainWindow::update_ui(){
 
                 ui->session_label->setText(sessions);
             }else{
-                ui->session_label->setText("No current sessions completed");
+                ui->session_label->setText("No recent sessions");
             }
 
             return;
