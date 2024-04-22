@@ -1,9 +1,9 @@
 COMP 3004 Final Project Team 66
 
 Team Members:
-Rhys Martin
-Sahel Reza
-Rayhan Moraldo
+Rhys Martin,
+Sahel Reza,
+Rayhan Moraldo,
 
 Responsibilities:
 Rhys Martin: Implementation of Qt and C++ code, User Case + OO design model, and test code
