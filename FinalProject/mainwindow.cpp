@@ -58,6 +58,14 @@ void MainWindow::setup(){
 }
 
 void MainWindow::update_ui(){
+    if(EEG.battery <= 0){
+        state = POWEREDOFF;
+        analysis_timer->stop();
+        session_updater->stop();
+        feedback_timer->stop();
+        EEG.clear_session();
+    }
+
     ui->selection_arrow1->setVisible(false);
     ui->selection_arrow2->setVisible(false);
     ui->selection_arrow3->setVisible(false);
@@ -80,6 +88,8 @@ void MainWindow::update_ui(){
     ui->graphicsView->setVisible(false);
 
     ui->wave_debug->setVisible(false);
+
+    ui->session_label->setVisible(false);
 
     switch (state){
         case POWEREDOFF:
@@ -132,6 +142,15 @@ void MainWindow::update_ui(){
                 ui->electrodes_button->setText("Disconnect Electrodes");
             }
 
+            if(EEG.session_complete){
+                ui->progressBar->setValue(100);
+                ui->timer_label->setText("0:00");
+            }
+
+            if(EEG.delivering_feedback){
+                ui->light_green->setVisible(true);
+            }
+
             return;
         case LOGS:
             if(EEG.electrodes_connected == false){
@@ -139,6 +158,19 @@ void MainWindow::update_ui(){
                 ui->electrodes_button->setText("Connect Electrodes");
             }else{
                 ui->electrodes_button->setText("Disconnect Electrodes");
+            }
+
+            ui->session_label->setVisible(true);
+
+            if(EEG.sessions_completed > 0){
+                QString sessions = "";
+                for(int i = 0; i < EEG.sessions_completed; ++i){
+                    sessions += EEG.sessions[i] + "\n";
+                }
+
+                ui->session_label->setText(sessions);
+            }else{
+                ui->session_label->setText("No current sessions completed");
             }
 
             return;
@@ -185,14 +217,22 @@ void MainWindow::session_update(){
     if(EEG.session_complete == true){
         update_ui();
         session_updater->stop();
-        state = MENU;
+        //state = MENU;
     }else{
         if(EEG.paused == false){
+            wait_timer = 0;
             session_time_remaining--;
             EEG.battery --;
 
             if(EEG.battery % 4 == 0){
                 EEG.battery --;
+            }
+        }else{
+            wait_timer ++;
+
+            if(wait_timer >= 10){
+                clear_current_session();
+                state = POWEREDOFF;
             }
         }
 
@@ -206,25 +246,32 @@ void MainWindow::analysis(){
         EEG.analysis();
         analysis_timer->stop();
         feedback_timer->start(1000 / 16);
+        EEG.feedback();
         EEG.current_feedback = 0;
     }else{
         qInfo("Session completed! Saving session log... DONE");
         EEG.analysis();
         analysis_timer->stop();
         EEG.session_complete = true;
-        state = MENU;
+
+        QDateTime local(QDateTime::currentDateTime());
+        QString name  = local.date().toString() + " " + local.time().toString();
+        EEG.save_session(name);
+        EEG.sessions_completed ++;
+        //state = MENU;
         update_ui();
     }
 }
 
 void MainWindow::feedback(){
     if(EEG.current_feedback < EEG.total_feedbacks){
+        EEG.delivering_feedback = true;
         EEG.current_feedback++;
-        EEG.feedback();
         qInfo("Administered feedback impulse %d of %d", EEG.current_feedback, EEG.total_feedbacks);
     }else{
         feedback_timer->stop();
         analysis_timer->start(5000);
+        EEG.delivering_feedback = false;
         EEG.current_round++;
         qInfo("Analysing... Please wait");
     }
@@ -246,7 +293,7 @@ void MainWindow::load_graph(){
     for(float x = 0.0; x < 0.75; x += 0.001){
 
         float y = a1 * sin(2 * 3.14 * f1 * x) + a2 * sin(2 * 3.14 * f2 * x) + a3 * sin(2 * 3.14 * f3 * x);
-        qInfo("%f", y);
+        //qInfo("%f", y);
 
         series->append(x, y);
     }
@@ -264,6 +311,7 @@ void MainWindow::clear_current_session(){
     EEG.current_round = 0;
     EEG.current_feedback = 0;
     EEG.session_complete = true;
+    EEG.delivering_feedback = false;
 }
 
 void MainWindow::resume_round(){
@@ -349,6 +397,7 @@ void MainWindow::on_stop_button_pressed()
         state = MENU;
         update_ui();
         //Call function in EEG to clear session data
+        EEG.clear_session();
     }
 }
 
@@ -358,6 +407,7 @@ void MainWindow::on_menu_button_pressed()
     if(state == POWEREDOFF){
         return;
     }
+    clear_current_session();
 
     current_selection = 0;
     state = MENU;

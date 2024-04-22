@@ -14,6 +14,7 @@ void Waveform::set_waveform(int f1, int f2, int f3, float a1, float a2, float a3
     amplitude_2 = a2;
     amplitude_3 = a3;
 
+    set_dominant_frequency();
     //qInfo("Frequencies for wavelength:  Freq1: %d, Freq2: %d, Freq3: %d, Amp1: %f, Amp2: %f, Amp3: %f", frequency_1, frequency_2, frequency_3, amplitude_1, amplitude_2, amplitude_3);
 }
 
@@ -25,4 +26,8 @@ void Waveform::reset(){
     amplitude_1 = 0;
     amplitude_2 = 0;
     amplitude_3 = 0;
+}
+
+void Waveform::set_dominant_frequency(){
+    dominant_frequency = (frequency_1 * amplitude_1 + frequency_2 * amplitude_2 + frequency_3 * amplitude_3) / (amplitude_1 + amplitude_2 + amplitude_3);
 }

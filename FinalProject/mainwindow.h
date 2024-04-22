@@ -68,6 +68,7 @@ private:
     int session_time_remaining = 0;
     int electrode_selection = 0;
     int round_selection = 0;
+    int wait_timer = 0;
 
     State state = State::MENU;
 

@@ -4,9 +4,12 @@
 #include <QMainWindow>
 #include <string>
 #include <QTimer>
-
+#include <fstream>
 #include "waveform.h"
 #include <random>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 class Neureset
 {
@@ -20,24 +23,28 @@ public:
     void feedback();
     Waveform* get_wave(int, int);
     void clear_session();
-    void save_session();
+    void save_session(QString);
 
     bool electrodes_connected = false;
     bool session_complete = true;
     bool paused = false;
+    bool delivering_feedback = false;
     int total_analysis = 4;
     int current_round = 0;
     int total_feedbacks = 16;
     int current_feedback = 0;
     int battery = 100;
+    int sessions_completed = 0;
+
+    QString sessions[3];
 
 
 private:
     void setup();
 
     Waveform logs[5][7];
+
     int num_logs, log_size;
-    int sessions_completed = 0;
 
     int alpha_low = 8;
     int alpha_range = 4;
